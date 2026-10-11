@@ -1,0 +1,24 @@
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# Environments
+.venv/
+venv/
+env/
+
+# Large artifacts
+data/raw/
+data/processed/
+data/alerts/
+data/demo/
+models/*.joblib
+models/*.json.tmp
+*.log
+
+# OS
+Thumbs.db
+.DS_Store

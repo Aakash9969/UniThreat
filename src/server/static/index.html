@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UniThreat — Unidirectional Traffic IDS</title>
+<link rel="icon" href="/favicon.ico" type="image/svg+xml">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- ================= header ================= -->
+  <header class="topbar">
+    <div class="brand">
+      <svg class="logo" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 2 3 6v6c0 5.25 3.6 9.74 9 11 5.4-1.26 9-5.75 9-11V6l-9-4z"
+              fill="none" stroke="currentColor" stroke-width="1.6"/>
+        <path d="M8 12.5l2.6 2.6L16.5 9" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <div>
+        <h1>UniThreat</h1>
+        <span class="tagline">AI threat detection · unidirectional IP traffic</span>
+      </div>
+    </div>
+
+    <div class="pills">
+      <span class="pill" id="pill-capture" title="Capture state">
+        <span class="dot"></span><span id="capture-state">INIT</span>
+      </span>
+      <span class="pill" id="pill-model" title="Model state">MODEL: —</span>
+      <span class="pill" id="pill-ws" title="WebSocket">WS: —</span>
+    </div>
+
+    <div class="controls">
+      <button id="btn-start" class="btn btn-start">Start capture</button>
+      <button id="btn-stop"  class="btn btn-stop" disabled>Stop capture</button>
+    </div>
+  </header>
+
+  <!-- ================= stat cards ================= -->
+  <section class="cards" id="cards">
+    <div class="card"><div class="card-label">Packets / sec</div>
+      <div class="card-value" id="stat-pps">0</div>
+      <div class="card-sub" id="stat-pkt-total">0 packets total</div></div>
+    <div class="card"><div class="card-label">Flows analysed</div>
+      <div class="card-value" id="stat-flows">0</div>
+      <div class="card-sub"><span id="stat-active">0</span> active</div></div>
+    <div class="card danger"><div class="card-label">Threats detected</div>
+      <div class="card-value" id="stat-threats">0</div>
+      <div class="card-sub" id="stat-threat-rate">0% of flows</div></div>
+    <div class="card"><div class="card-label">Alerts (session)</div>
+      <div class="card-value" id="stat-alerts">0</div>
+      <div class="card-sub" id="stat-alerts-sev">—</div></div>
+    <div class="card"><div class="card-label">Throughput</div>
+      <div class="card-value" id="stat-bps">0</div>
+      <div class="card-sub" id="stat-bytes-total">0 bytes seen</div></div>
+  </section>
+
+  <!-- ================= charts ================= -->
+  <section class="grid-charts">
+    <div class="panel">
+      <div class="panel-head">
+        <h2>One-way traffic</h2>
+        <div class="legend">
+          <span class="legend-item"><i class="sw sw-cyan"></i>packets/s</span>
+          <span class="legend-item"><i class="sw sw-dim"></i>KB/s</span>
+        </div>
+      </div>
+      <canvas id="traffic-chart" height="220"></canvas>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h2>Verdict mix</h2></div>
+      <div class="donut-wrap">
+        <canvas id="verdict-donut" width="220" height="220"></canvas>
+        <div class="donut-center">
+          <div class="donut-num" id="donut-threat-pct">0%</div>
+          <div class="donut-label">threat flows</div>
+        </div>
+      </div>
+      <ul class="verdict-list" id="verdict-list"></ul>
+    </div>
+  </section>
+
+  <!-- ================= feed + table ================= -->
+  <section class="grid-main">
+    <div class="panel" id="alert-panel">
+      <div class="panel-head">
+        <h2>Threat alerts</h2>
+        <a class="mini-link" href="/api/alerts/export.csv" download>export CSV</a>
+      </div>
+      <div class="alert-feed" id="alert-feed">
+        <div class="empty">No alerts yet.</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <h2>Recent flows</h2>
+        <label class="mini-check"><input type="checkbox" id="chk-threats"> threats only</label>
+      </div>
+      <div class="table-wrap">
+        <table class="flows" id="flow-table">
+          <thead>
+            <tr><th>time</th><th>source → dest</th><th>proto</th>
+                <th class="num">pkts</th><th class="num">bytes</th>
+                <th class="num">dur</th><th>verdict</th></tr>
+          </thead>
+          <tbody id="flow-body">
+            <tr class="empty-row"><td colspan="7">Waiting for flows…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <span id="foot-model">model: —</span> ·
+    <span id="foot-source">source: —</span> ·
+    <span id="foot-dir">direction: —</span>
+  </footer>
+</div>
+
+<div id="toasts"></div>
+<script src="/static/app.js"></script>
+</body>
+</html>

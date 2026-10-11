@@ -1,0 +1,17 @@
+# Normalize line endings for text files; keep everything else as-is.
+* text=auto
+*.py text
+*.js text
+*.css text
+*.html text
+*.md text
+*.yaml text
+*.yml text
+*.json text
+*.txt text
+*.service text
+*.svg text
+Dockerfile text
+.gitattributes text
+.gitignore text
+LICENSE text

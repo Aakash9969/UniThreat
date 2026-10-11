@@ -1,0 +1,18 @@
+# UniThreat - AI-based threat detection for unidirectional IP traffic
+# Runtime
+fastapi>=0.115
+uvicorn[standard]>=0.30
+scapy>=2.6.1
+scikit-learn>=1.6
+pandas>=2.2
+numpy>=2.1
+joblib>=1.4
+PyYAML>=6.0.2
+
+# Dataset / model extras
+pyarrow>=18.0          # parquet dataset support (fallback: CSV source works without it)
+xgboost>=2.1           # optional second model; training falls back to RF-only if missing
+
+# Dev / test
+pytest>=8.3
+httpx>=0.27

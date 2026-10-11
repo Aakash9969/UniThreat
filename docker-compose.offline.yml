@@ -1,0 +1,16 @@
+# Offline/demo deployment (replay a pcap through the dashboard; no NIC caps).
+services:
+  unithreat:
+    build: .
+    container_name: unithreat-offline
+    ports:
+      - "8000:8000"
+    environment:
+      UNITHREAT_BACKEND: replay
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./config.yaml:/app/config.yaml:ro
+    restart: unless-stopped
+    # edit config.yaml: capture.backend: replay
+    #                    capture.replay.pcap_path: data/demo/demo_traffic.pcap

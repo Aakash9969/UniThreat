@@ -1,0 +1,14 @@
+# Live-capture deployment (Linux; needs host networking for sniffing).
+services:
+  unithreat:
+    build: .
+    container_name: unithreat
+    network_mode: host        # required for live capture
+    cap_add:
+      - NET_RAW
+      - NET_ADMIN
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./config.yaml:/app/config.yaml:ro
+    restart: unless-stopped
