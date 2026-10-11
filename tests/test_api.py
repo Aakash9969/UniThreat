@@ -98,6 +98,14 @@ def test_config_endpoint(client):
     assert cfg["detection"]["min_confidence"] == 0.55
 
 
+def test_health_endpoint(client):
+    r = client.get("/health")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["status"] == "ok"
+    assert "capture_running" in body and "model_loaded" in body
+
+
 def test_capture_start_stop_cycle(client):
     wait_for(lambda: not client.get("/api/stats").json()["running"])
 

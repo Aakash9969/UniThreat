@@ -94,6 +94,21 @@ def main() -> int:
         except ImportError:
             pass
 
+    # fail fast (and clearly) when the port is already taken — otherwise
+    # uvicorn dies with a cryptic [Errno 10048] bind error
+    import socket
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
+        try:
+            probe.bind((server.host, server.port))
+        except OSError:
+            print(f"ERROR: port {server.port} on {server.host} is already in use.")
+            print("An earlier UniThreat instance is probably still running.")
+            print("  - stop it: press Ctrl+C in its terminal window, or")
+            print("  - kill it:  Get-NetTCPConnection -LocalPort "
+                  f"{server.port} -State Listen | %{{ Stop-Process -Id $_.OwningProcess -Force }}")
+            print(f"  - or use another port:  python scripts/run_server.py --port {server.port + 1}")
+            return 1
+
     app = create_app(config)
 
     import uvicorn

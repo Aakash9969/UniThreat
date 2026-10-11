@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import csv
 import io
+import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Optional
@@ -69,6 +70,18 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
     @app.get("/api/status")
     async def api_status():
         return state().status()
+
+    @app.get("/health", include_in_schema=False)
+    async def health():
+        """Liveness probe for load balancers / Docker / systemd watchdogs."""
+        s = state()
+        running = bool(s.pipeline is not None and s.pipeline.is_running)
+        return {
+            "status": "ok",
+            "capture_running": running,
+            "model_loaded": s.detector is not None,
+            "uptime_s": round(time.time() - s.started_at, 1),
+        }
 
     @app.get("/api/stats")
     async def api_stats():
