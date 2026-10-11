@@ -24,6 +24,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from bootstrap import anchor_project_root
 from src.config import load_config
 from src.ml.train import train_model
 
@@ -48,6 +49,8 @@ def main() -> int:
                              "of re-deriving features through the live extractor "
                              "(default: live features)")
     args = parser.parse_args()
+
+    anchor_project_root()   # relative paths (config.yaml, models/) -> repo root
 
     cfg = load_config(args.config).training
     overrides = {}

@@ -80,18 +80,57 @@ class ScapyLiveSource(BaseSource):
         try:
             self._sniffer.start()
         except Exception as exc:
-            raise RuntimeError(
-                f"could not start live capture on interface "
-                f"{self.interface or '(default)'}: {exc}. "
-                "On Windows install Npcap (https://npcap.com); on Linux check "
-                "that the interface name is correct and you have CAP_NET_RAW."
-            ) from exc
+            raise RuntimeError(self._failure_hint(exc)) from exc
+
+        # AsyncSniffer failures (no Npcap/libpcap, bad interface, ...) happen
+        # inside its own thread and are stored on `.exception` — poll for
+        # them so a dead capture surfaces as a capture_error instead of
+        # "running" forever with zero packets.
+        if not self._wait_until_alive(timeout=3.0):
+            self._raise_sniffer_error()
         while not stop_event.wait(timeout=0.25):
-            pass
+            exc = getattr(self._sniffer, "exception", None)
+            if exc is not None:
+                self._raise_sniffer_error()
         try:
             self._sniffer.stop(stop=True)
         except Exception:
             pass
+
+    def _wait_until_alive(self, timeout: float) -> bool:
+        """True once the sniffer is provably receiving (continue_sniff set)."""
+        deadline = time.time() + timeout
+        while time.time() < deadline:
+            if getattr(self._sniffer, "exception", None) is not None:
+                return False
+            if getattr(self._sniffer, "continue_sniff", False):
+                return True
+            thread = getattr(self._sniffer, "thread", None)
+            if thread is not None and not thread.is_alive():
+                return False
+            time.sleep(0.1)
+        # no exception, no proof of life, thread still spinning — treat as
+        # alive (some platforms start slowly)
+        return True
+
+    def _raise_sniffer_error(self) -> None:
+        exc = getattr(self._sniffer, "exception", None)
+        try:
+            self._sniffer.stop(stop=True)
+        except Exception:
+            pass
+        raise RuntimeError(self._failure_hint(exc))
+
+    @staticmethod
+    def _failure_hint(exc: Optional[BaseException]) -> str:
+        base = f"live capture failed: {exc}. " if exc else "live capture failed. "
+        return base + (
+            "On Windows install Npcap (https://npcap.com, enable the "
+            "'Install Npcap in WinPcap API-compatible Mode' option); on Linux "
+            "verify the interface name and CAP_NET_RAW privileges. For a "
+            "no-NIC demo run: python scripts/run_server.py --backend replay "
+            "--pcap data/demo/demo_traffic.pcap"
+        )
 
     def stop(self) -> None:
         self._stop_event.set()

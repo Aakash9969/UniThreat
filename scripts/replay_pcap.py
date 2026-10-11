@@ -18,6 +18,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from bootstrap import anchor_project_root
 from src.alerts.manager import AlertManager
 from src.capture.direction import DirectionFilter
 from src.capture.pipeline import CapturePipeline
@@ -37,6 +38,8 @@ def main() -> int:
     parser.add_argument("--csv", default=None, help="write flow records CSV here")
     parser.add_argument("--top", type=int, default=15, help="rows in the report tables")
     args = parser.parse_args()
+
+    anchor_project_root()   # relative paths (config.yaml, models/) -> repo root
 
     if not Path(args.pcap).exists():
         print(f"pcap not found: {args.pcap}", file=sys.stderr)

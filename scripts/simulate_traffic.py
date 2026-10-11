@@ -37,6 +37,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from bootstrap import anchor_project_root
+
 EPOCH = 1735689600  # fixed base timestamp for reproducible pcaps
 
 # TCP flag bitmasks (Scapy values)
@@ -192,6 +194,8 @@ def main() -> int:
     parser.add_argument("--loop", action="store_true",
                         help="--send mode: repeat the schedule forever")
     args = parser.parse_args()
+
+    anchor_project_root()   # relative paths (data/demo) -> repo root
 
     rng = random.Random(args.seed)
     print(f"building {args.duration:.0f}s schedule (seed {args.seed}) ...")

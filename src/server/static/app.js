@@ -49,6 +49,7 @@
     stats: null,
     threatsOnly: false,
   };
+  const warned = { model: false, captureErr: false, direction: false };
 
   // ------------------------------------------------------------------ REST
   async function api(path, opts) {
@@ -125,7 +126,10 @@
       case "capture_started":
       case "capture_stopped":
       case "source_finished":
+        pollStats();
+        break;
       case "capture_error":
+        toastText(msg.error || "capture failed");
         pollStats();
         break;
       default:
@@ -158,10 +162,23 @@
     } else {
       setPill("pill-model", "MODEL: NOT LOADED", "bad");
       $("foot-model").textContent = "model: NOT LOADED — " + (model.error || "train one via scripts/train.py");
+      if (!warned.model) {
+        warned.model = true;
+        toastText("model not loaded — train one first: " +
+                   "python scripts/train.py --data <dataset-dir>");
+      }
     }
     if (st.capture) {
       $("foot-source").textContent = "source: " + (st.capture.source || st.capture.backend);
       $("foot-dir").textContent = "direction: " + (st.capture.direction || "—");
+      if (st.capture.error && !warned.captureErr) {
+        warned.captureErr = true;
+        toastText(st.capture.error);
+      }
+      if ((st.capture.warnings || []).length && !warned.direction) {
+        warned.direction = true;
+        st.capture.warnings.forEach((w) => toastText(w));
+      }
     }
     if (st.capture && st.capture.error) {
       setPill("pill-capture", "CAPTURE ERROR", "bad");
@@ -397,12 +414,14 @@
   $("chk-threats").addEventListener("change", (ev) => {
     store.threatsOnly = ev.target.checked; renderFlows();
   });
-  function toastText(text) {
+  function toastText(text, title = "attention") {
     const el = document.createElement("div");
     el.className = "toast";
-    el.innerHTML = `<div class="t-head">action failed</div><div class="t-sub">${esc(text)}</div>`;
+    el.innerHTML = `<div class="t-head">${esc(title)}</div>
+      <div class="t-sub">${esc(text)}</div>`;
     $("toasts").appendChild(el);
-    setTimeout(() => el.remove(), 4000);
+    setTimeout(() => el.classList.add("fading"), 9000);
+    setTimeout(() => el.remove(), 9600);
   }
 
   // ------------------------------------------------------------------ boot

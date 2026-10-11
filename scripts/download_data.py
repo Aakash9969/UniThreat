@@ -34,6 +34,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from bootstrap import anchor_project_root
+
 HF_API = "https://huggingface.co/api/datasets"
 HF_RESOLVE = "https://huggingface.co/datasets"
 
@@ -151,6 +153,8 @@ def main() -> int:
     parser.add_argument("--list-only", action="store_true",
                         help="list files and exit")
     args = parser.parse_args()
+
+    anchor_project_root()   # default dest paths -> repo root
 
     src = SOURCES[args.source]
     dest_dir = Path(args.dest) if args.dest else Path(src["dest"])

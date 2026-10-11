@@ -10,12 +10,11 @@ __pycache__/
 venv/
 env/
 
-# Large artifacts
-data/raw/
-data/processed/
-data/alerts/
-data/demo/
-models/*.joblib
+# Generated artifacts (regenerable via scripts/)
+/data/
+/models/*.joblib
+*.pcap
+*.parquet
 models/*.json.tmp
 *.log
 

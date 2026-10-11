@@ -20,6 +20,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from bootstrap import anchor_project_root
 from src.config import ReplayConfig, load_config
 from src.server.app import create_app
 
@@ -40,6 +41,10 @@ def main() -> int:
     parser.add_argument("--port", type=int, default=None)
     parser.add_argument("--no-autostart", action="store_true")
     args = parser.parse_args()
+
+    # work from any directory: relative paths (config.yaml, models/, data/)
+    # resolve against the project root
+    root = anchor_project_root()
 
     config = load_config(args.config)
 
@@ -69,6 +74,25 @@ def main() -> int:
     if args.port is not None:
         server = replace(server, port=args.port)
     config = replace(config, server=server)
+
+    # fail fast with an actionable message when live capture can't work here
+    if config.capture.backend == "live":
+        import platform
+        try:
+            import scapy.all  # noqa: F401  (loads the arch layer)
+            from scapy.config import conf
+            if platform.system() == "Windows" and not conf.use_pcap:
+                print("!" * 62)
+                print("  WARNING: no packet driver found (Npcap is missing).")
+                print("  Live capture will NOT receive packets on Windows")
+                print("  until you install Npcap: https://npcap.com")
+                print("  (enable 'WinPcap API-compatible Mode' during setup)")
+                print("  For a no-NIC demo, run instead:")
+                print("    python scripts/run_server.py --backend replay "
+                      "--pcap data/demo/demo_traffic.pcap")
+                print("!" * 62)
+        except ImportError:
+            pass
 
     app = create_app(config)
 

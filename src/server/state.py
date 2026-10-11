@@ -49,6 +49,12 @@ class AppState:
         self._pipeline_error: Optional[str] = None
         self._capture_warnings: list[str] = self._direction_warnings()
 
+    def _on_pipeline_event(self, event: dict) -> None:
+        """Pipeline thread events -> status bookkeeping + dashboard fan-out."""
+        if event.get("type") == "capture_error":
+            self._pipeline_error = str(event.get("error", "capture failed"))
+        self.hub.publish(event)
+
     # -- pipeline lifecycle ------------------------------------------------------
 
     def _direction_warnings(self) -> list[str]:
@@ -83,7 +89,7 @@ class AppState:
             direction_filter=direction,
             detector=self.detector,
             alert_manager=self.alerts,
-            on_event=self.hub.publish,
+            on_event=self._on_pipeline_event,
             history_seconds=cfg.dashboard.history_points,
         )
 

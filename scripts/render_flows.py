@@ -22,6 +22,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from bootstrap import anchor_project_root
+
 EPOCH = 1735689600
 MAC_SRC, MAC_DST = "aa:bb:cc:00:10:20", "aa:bb:cc:00:00:05"
 
@@ -158,6 +160,8 @@ def main() -> int:
                         help="after rendering, run the pipeline offline and "
                              "report detection results")
     args = parser.parse_args()
+
+    anchor_project_root()   # relative paths (config.yaml, models/) -> repo root
 
     data_dir = Path(args.data) if args.data else find_dataset_dir()
     rng = random.Random(args.seed)
