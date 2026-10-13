@@ -36,6 +36,10 @@ def main() -> int:
     parser.add_argument("--no-loop", action="store_true",
                         help="stop after one replay pass instead of looping")
     parser.add_argument("--interface", default=None, help="capture interface name")
+    parser.add_argument("--direction", choices=["outbound", "inbound", "any"],
+                        default=None,
+                        help="override the one-way filter from config.yaml "
+                             "(use 'any' to watch everything, e.g. for demos)")
     parser.add_argument("--model", default=None, help="override model path")
     parser.add_argument("--host", default=None)
     parser.add_argument("--port", type=int, default=None)
@@ -60,6 +64,8 @@ def main() -> int:
         capture = replace(capture, backend=args.backend)
     if args.interface is not None:
         capture = replace(capture, interface=args.interface)
+    if args.direction is not None:
+        capture = replace(capture, direction=args.direction)
     capture = replace(capture, replay=replay)
     if args.no_autostart:
         capture = replace(capture, autostart=False)
