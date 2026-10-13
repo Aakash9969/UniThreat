@@ -124,6 +124,11 @@
         break;
       }
       case "capture_started":
+        pollStats();
+        toastText("Capture is live. Flows are judged after ~30s of silence, " +
+                  "so the first verdicts & alerts appear shortly — watch the " +
+                  "'active' counter meanwhile.", "capture started");
+        break;
       case "capture_stopped":
       case "source_finished":
         pollStats();
@@ -332,7 +337,9 @@
       .filter((f) => !store.threatsOnly || (f.verdict && f.verdict.is_threat))
       .slice(0, 40);
     if (!rows.length) {
-      body.innerHTML = `<tr class="empty-row"><td colspan="7">Waiting for flows…</td></tr>`;
+      body.innerHTML = `<tr class="empty-row"><td colspan="7">No flows yet —
+        flows appear here once they close (~30s after their last packet).
+        Fresh captures start empty.</td></tr>`;
       return;
     }
     body.innerHTML = rows.map((f) => {

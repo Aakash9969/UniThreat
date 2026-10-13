@@ -26,7 +26,9 @@ capture:
   # Replay-mode settings (backend: replay)
   replay:
     pcap_path: null     # path to a .pcap file to analyse
-    speed: 1.0          # 0 = as fast as possible, 1.0 = real-time pacing
+    speed: 8.0           # replay speed multiplier. 8 = a 3-minute recording
+                         # plays in ~25s, so flows close and alerts appear
+                         # almost immediately (1.0 = real-time pacing)
     loop: true          # restart the file when it ends (continuous demo)
 
 flow:
