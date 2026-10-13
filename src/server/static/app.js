@@ -5,9 +5,10 @@
 (function () {
   // ------------------------------------------------------------------ helpers
   const $ = (id) => document.getElementById(id);
+  // HTML-escape: builds numeric entities from char codes (immune to
+  // entity-mangling in any tooling that touches this file)
   const esc = (s) => String(s).replace(/[&<>"']/g,
-    (c) => ({ "&": "&", "<": "<", ">": ">",
-              '"': """, "'": "&#39;" }[c]));
+    (c) => "&#" + c.charCodeAt(0) + ";");
   const fmtInt = (n) => (n ?? 0).toLocaleString("en-US");
   const fmtBytes = (n) => {
     n = n ?? 0;
