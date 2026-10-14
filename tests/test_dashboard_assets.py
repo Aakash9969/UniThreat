@@ -60,3 +60,17 @@ def test_no_named_html_entities_in_js():
             "build HTML escapes with charCodeAt(0) instead; named entities "
             "have been mangled into raw characters before, breaking the file"
         )
+
+
+def test_every_dom_id_referenced_by_js_exists_in_html():
+    """A null DOM lookup crashed the dashboard's render loop once (a status
+    pill without the child span the JS expected). This keeps every element
+    id referenced from app.js honest against index.html."""
+    js = (_STATIC / "app.js").read_text(encoding="utf-8")
+    html = (_STATIC / "index.html").read_text(encoding="utf-8")
+    referenced = set(re.findall(r"\$\(\s*\"([A-Za-z0-9_-]+)\"\s*\)", js))
+    assert referenced, "no DOM ids found in app.js (regex drifted?)"
+    for dom_id in sorted(referenced):
+        assert f'id="{dom_id}"' in html, (
+            f"app.js references #{dom_id} but index.html has no such element"
+        )

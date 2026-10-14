@@ -73,11 +73,20 @@
     } catch (e) { console.warn("hydrate failed:", e); }
   }
 
+  // run each render step independently: one broken renderer must never
+  // freeze the rest of the dashboard (a single thrown error once silently
+  // killed all cards + charts while the alert feed kept working)
+  function safeRun(...fns) {
+    for (const fn of fns) {
+      try { fn(); } catch (err) { console.error("render failed:", fn.name, err); }
+    }
+  }
+
   async function pollStats() {
     try {
       const [status, stats] = await Promise.all([api("/api/status"), api("/api/stats")]);
       store.status = status; store.stats = stats;
-      renderStatus(); renderCards(); renderTrafficChart(); renderDonut();
+      safeRun(renderStatus, renderCards, renderTrafficChart, renderDonut);
     } catch (e) { /* server restarting */ }
   }
 
@@ -147,7 +156,10 @@
   function setPill(id, text, cls) {
     const el = $(id);
     el.className = "pill" + (cls ? " " + cls : "");
-    el.querySelector("span:last-child").textContent = text;
+    // pills with child spans update the last one; text-only pills update
+    // themselves (querying a missing span once crashed every render pass)
+    const target = el.querySelector("span:last-child") || el;
+    target.textContent = text;
   }
 
   function renderStatus() {
@@ -224,8 +236,13 @@
 
   function drawTraffic(canvas, tl) {
     const dpr = window.devicePixelRatio || 1;
-    const w = canvas.clientWidth || 600, h = canvas.height;
-    canvas.width = w * dpr; canvas.style.height = h + "px";
+    const w = canvas.clientWidth || 600;
+    const h = 220;  // logical height (matches the height attribute in index.html)
+    // scale BOTH buffer dimensions by dpr — the missing canvas.height
+    // scaling clipped the bottom of the chart on hiDPI (Windows 125%+)
+    canvas.width = Math.round(w * dpr);
+    canvas.height = Math.round(h * dpr);
+    canvas.style.height = h + "px";
     const ctx = canvas.getContext("2d");
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
@@ -392,8 +409,8 @@
   }
 
   function renderAll() {
-    renderStatus(); renderCards(); renderTrafficChart(); renderDonut();
-    renderFlows(); renderAlerts();
+    safeRun(renderStatus, renderCards, renderTrafficChart, renderDonut,
+            renderFlows, renderAlerts);
   }
 
   // ------------------------------------------------------------------ toasts
