@@ -121,6 +121,47 @@ def test_capture_start_stop_cycle(client):
     assert ok
 
 
+def test_alerts_scope_session_vs_history(tmp_path):
+    """Old persisted alerts must not appear in the default (session) view —
+    they belong to the explicit history view."""
+    from src.alerts.store import SqliteAlertStore
+    from src.config import AlertPersistenceConfig
+
+    db = tmp_path / "seeded_alerts.db"
+    store = SqliteAlertStore(db)
+    store.enqueue_upsert({
+        "id": "oldalert001", "ts_first": 1000.0, "ts_last": 1000.0,
+        "label": "DDoS", "category": "dos", "severity": "critical",
+        "confidence": 0.9, "src": "1.2.3.4", "sport": 1,
+        "dst": "5.6.7.8", "dport": 2, "proto_name": "TCP",
+        "occurrences": 1, "flow_duration_us": 0,
+    })
+    store.close()  # flush the writer thread
+
+    pcap = make_pcap(tmp_path)
+    cfg = build_config(pcap, tmp_path)
+    cfg.alerts.persistence = AlertPersistenceConfig(
+        enabled=True, path=str(db))
+    app = create_app(cfg)
+    with TestClient(app) as client:
+        ok = wait_for(lambda: client.get("/api/stats").json()["flows_total"] >= 2)
+        assert ok
+
+        session = client.get("/api/alerts?scope=session").json()
+        history = client.get("/api/alerts?scope=history").json()
+
+        assert session["scope"] == "session"
+        assert session["source"] == "session"
+        assert all(a["id"] != "oldalert001" for a in session["alerts"])
+
+        assert history["scope"] == "history"
+        assert history["source"] == "sqlite"
+        assert any(a["id"] == "oldalert001" for a in history["alerts"])
+        # current-session alerts are in the history too
+        assert len(history["alerts"]) > len(session["alerts"]) or \
+            any(a["id"] != "oldalert001" for a in history["alerts"])
+
+
 def test_websocket_snapshot(client):
     with client.websocket_connect("/ws") as ws:
         msg = ws.receive_json()

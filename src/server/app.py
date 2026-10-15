@@ -100,20 +100,24 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
     async def api_alerts(limit: int = Query(50, ge=1, le=500),
                          offset: int = Query(0, ge=0),
                          severity: Optional[str] = None,
-                         label: Optional[str] = None):
+                         label: Optional[str] = None,
+                         scope: str = Query("session")):
+        """scope=session: alerts raised by THIS server run (default).
+        scope=history: the full persisted SQLite alert log."""
         mgr = state().alerts
-        store = mgr.store
-        if store is not None:
-            alerts = store.query(severity=severity, label=label,
-                                 limit=limit, offset=offset)
+        if scope == "history" and mgr.store is not None:
+            alerts = mgr.store.query(severity=severity, label=label,
+                                     limit=limit, offset=offset)
             source = "sqlite"
         else:
-            alerts = mgr.list_recent(limit=limit, offset=offset, severity=severity)
-            source = "memory"
+            alerts = mgr.list_recent(limit=limit, offset=offset,
+                                     severity=severity)
+            source = "session"
         return {
             "alerts": alerts,
             "count": len(alerts),
             "source": source,
+            "scope": scope,
             "summary": mgr.summary(),
         }
 

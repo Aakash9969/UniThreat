@@ -143,6 +143,12 @@ canvas { display: block; width: 100%; }
 .alert.high     { border-left-color: var(--orange); }
 .alert.medium   { border-left-color: var(--yellow); }
 .alert.low      { border-left-color: var(--blue); }
+.alert.history  { opacity: .55; }
+.alert.history:hover { opacity: 1; }
+.badge.hist {
+  color: var(--muted); background: var(--panel);
+  border: 1px solid var(--border);
+}
 
 .alert-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .alert-label { font: 600 13px var(--mono); }
@@ -198,6 +204,11 @@ table.flows .ep b { color: var(--text); font-weight: 500; }
 
 .mini-link { color: var(--cyan); font-size: 11px; text-decoration: none; font-family: var(--mono); }
 .mini-link:hover { text-decoration: underline; }
+button.mini-link {
+  background: none; border: none; padding: 0; cursor: pointer; font: inherit;
+}
+.head-actions { display: flex; gap: 14px; align-items: center; }
+.dim { color: #55677a; font-size: 11px; margin-top: 6px; line-height: 1.5; }
 .mini-check { color: var(--muted); font-size: 11.5px; display: inline-flex; gap: 5px; align-items: center; cursor: pointer; }
 
 /* ---------------- footer / toasts ---------------- */

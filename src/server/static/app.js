@@ -45,7 +45,9 @@
   // ------------------------------------------------------------------ state
   const store = {
     flows: [],                    // newest first
-    alerts: new Map(),            // id -> alert
+    alerts: new Map(),            // id -> alert, raised in THIS session
+    history: [],                  // persisted alerts (scope=history)
+    scope: "session",             // "session" | "history"
     status: null,
     stats: null,
     threatsOnly: false,
@@ -59,16 +61,28 @@
     return res.json();
   }
 
+  async function refreshAlerts() {
+    try {
+      const res = await api("/api/alerts?limit=100&scope=" + store.scope);
+      if (store.scope === "history") {
+        store.history = res.alerts || [];
+      } else {
+        store.alerts = new Map();
+        (res.alerts || []).forEach((a) => store.alerts.set(a.id, a));
+      }
+    } catch (e) { console.warn("alerts fetch failed:", e); }
+  }
+
   async function hydrate() {
     try {
-      const [status, stats, alerts, flows] = await Promise.all([
+      const [status, stats, flows] = await Promise.all([
         api("/api/status"), api("/api/stats"),
-        api("/api/alerts?limit=100"), api("/api/flows?limit=100"),
+        api("/api/flows?limit=100"),
       ]);
       store.status = status;
       store.stats = stats;
-      (alerts.alerts || []).slice().reverse().forEach((a) => store.alerts.set(a.id, a));
       store.flows = (flows.flows || []).slice().reverse();   // API returns newest first
+      await refreshAlerts();
       renderAll();
     } catch (e) { console.warn("hydrate failed:", e); }
   }
@@ -385,18 +399,26 @@
   // -- alerts feed -----------------------------------------------------------------
   function renderAlerts() {
     const feed = $("alert-feed");
-    const alerts = [...store.alerts.values()]
-      .sort((a, b) => b.ts_last - a.ts_last).slice(0, 80);
+    const inHistory = store.scope === "history";
+    const alerts = inHistory
+      ? (store.history || []).slice(0, 80)                    // API pre-sorts desc
+      : [...store.alerts.values()]
+          .sort((a, b) => b.ts_last - a.ts_last).slice(0, 80);
     if (!alerts.length) {
-      feed.innerHTML = `<div class="empty">No alerts yet.</div>`;
+      feed.innerHTML = inHistory
+        ? `<div class="empty">No saved alerts in the history yet.</div>`
+        : `<div class="empty">No alerts in this session yet.
+           <div class="dim">alerts from previous runs are kept in the saved
+           history — use "show history" above</div></div>`;
       return;
     }
     feed.innerHTML = alerts.map((a) => `
-      <div class="alert ${a.severity}">
+      <div class="alert ${a.severity}${inHistory ? " history" : ""}">
         <div class="alert-top">
           <span class="badge sev-${a.severity}">${esc(a.severity)}</span>
           <span class="alert-label">${esc(a.label)}</span>
           <span class="badge cat">${esc(a.category)}</span>
+          ${inHistory ? `<span class="badge hist">history</span>` : ""}
           ${a.occurrences > 1 ? `<span class="alert-occ">×${fmtInt(a.occurrences)}</span>` : ""}
           <span class="alert-time">${hhmmss(a.ts_last)}</span>
         </div>
@@ -435,6 +457,13 @@
   $("btn-stop").addEventListener("click", async () => {
     try { await api("/api/capture/stop", { method: "POST" }); pollStats(); }
     catch (e) { toastText(String(e)); }
+  });
+  $("btn-scope").addEventListener("click", async () => {
+    store.scope = store.scope === "session" ? "history" : "session";
+    $("btn-scope").textContent =
+      store.scope === "session" ? "show history" : "session only";
+    await refreshAlerts();
+    safeRun(renderAlerts);
   });
   $("chk-threats").addEventListener("change", (ev) => {
     store.threatsOnly = ev.target.checked; renderFlows();

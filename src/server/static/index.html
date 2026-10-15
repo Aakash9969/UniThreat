@@ -88,7 +88,11 @@
     <div class="panel" id="alert-panel">
       <div class="panel-head">
         <h2>Threat alerts</h2>
-        <a class="mini-link" href="/api/alerts/export.csv" download>export CSV</a>
+        <div class="head-actions">
+          <button id="btn-scope" class="mini-link btn-as-link"
+                  title="Switch between alerts raised during this session and the full saved history">show history</button>
+          <a class="mini-link" href="/api/alerts/export.csv" download>export CSV</a>
+        </div>
       </div>
       <div class="alert-feed" id="alert-feed">
         <div class="empty">No alerts yet.</div>
@@ -123,6 +127,6 @@
 </div>
 
 <div id="toasts"></div>
-<script src="/static/app.js?v=3"></script>
+<script src="/static/app.js?v=4"></script>
 </body>
 </html>
