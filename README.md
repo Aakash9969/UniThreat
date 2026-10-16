@@ -30,6 +30,18 @@ analytics through a built-in web dashboard and REST/WebSocket API.
                                               └──────────────────────────────┘
 ```
 
+## The dashboard
+
+**Demo replay** — recorded CIC-IDS2017 attack traffic (port scans, DDoS floods,
+slowloris, brute-force) being detected in real time as it replays through the sensor:
+
+![UniThreat dashboard — demo replay catching recorded attacks](docs/dashboard-demo.png)
+
+**Live mode** — the same sensor watching real network traffic; mostly green
+"benign" verdicts, which is exactly what a healthy network should look like:
+
+![UniThreat dashboard — live traffic, mostly benign](docs/dashboard-live.png)
+
 ## Why "unidirectional" matters
 
 A data diode guarantees that traffic can only flow one way (e.g. from a

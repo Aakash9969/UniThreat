@@ -1,6 +1,8 @@
 """Application state: wires config, detector, alerts, pipeline and events."""
 from __future__ import annotations
 
+import ipaddress
+import socket
 import threading
 import time
 from typing import Optional
@@ -12,6 +14,46 @@ from src.capture.pipeline import CapturePipeline
 from src.capture.source import build_source_from_config
 from src.config import Config
 from src.ml.detector import safe_load
+
+
+def _primary_local_ip() -> Optional[str]:
+    """Best-effort primary outbound IPv4 (UDP connect - no packets sent)."""
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            s.settimeout(0.5)
+            s.connect(("192.0.2.1", 1))
+            return s.getsockname()[0]
+    except OSError:
+        return None
+
+
+def direction_mismatch_warnings(cfg, local_ip: Optional[str]) -> list[str]:
+    """Warn when the one-way filter excludes this machine's own traffic.
+
+    Roaming laptops change networks (new DHCP lease, different Wi-Fi) and a
+    stale trusted_cidrs then silently drops every local packet - the dashboard
+    shows nothing and gives no clue why. This turns that failure into an
+    actionable on-screen warning.
+    """
+    warnings = []
+    cap = cfg.capture
+    if cap.direction != "outbound" or not cap.trusted_cidrs or not local_ip:
+        return warnings
+    try:
+        addr = ipaddress.ip_address(local_ip)
+    except ValueError:
+        return warnings
+    inside = any(addr in ipaddress.ip_network(c, strict=False)
+                 for c in cap.trusted_cidrs)
+    if not inside:
+        warnings.append(
+            f"this machine's IP {local_ip} is NOT inside "
+            f"capture.trusted_cidrs {cap.trusted_cidrs} — all local outbound "
+            "traffic is being filtered out, so the dashboard will look dead. "
+            "Update trusted_cidrs in config.yaml to your current subnet "
+            "(ipconfig shows your IP + mask), or run with --direction any."
+        )
+    return warnings
 
 
 class AppState:
@@ -73,6 +115,8 @@ class AppState:
                 "packet will be filtered out. Set capture.monitored_hosts or "
                 "use direction: any."
             )
+        warnings.extend(direction_mismatch_warnings(
+            self.config, _primary_local_ip()))
         return warnings
 
     def build_pipeline(self) -> CapturePipeline:
